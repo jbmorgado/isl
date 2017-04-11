@@ -1,0 +1,27 @@
+---
+title: "Chapter 2: Statistical Learning"
+output: 2-statistical-learning
+---
+
+## 8. College Dataset
+
+### (a) load dataset
+Datasets available on http://www-bcf.usc.edu/~gareth/ISL/data.html
+
+```{r}
+college = read.csv('http://www-bcf.usc.edu/~gareth/ISL/College.csv')
+head(college)
+```
+
+### (b) assign the 1st column to rownames
+
+```{r}
+# assign the rownames to the 1st column
+rownames(college)=college[,1]
+
+# remove the 1st column that is now duplicate
+college=college[,-1]
+```
+
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
