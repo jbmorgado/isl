@@ -1,6 +1,6 @@
 ---
 title: "Chapter 2: Statistical Learning"
-output: 2-statistical-learning
+output: html_notebook
 ---
 
 ## 8. College Dataset
@@ -9,19 +9,212 @@ output: 2-statistical-learning
 Datasets available on http://www-bcf.usc.edu/~gareth/ISL/data.html
 
 ```{r}
-college = read.csv('http://www-bcf.usc.edu/~gareth/ISL/College.csv')
-head(college)
+# read the data in csv format from the web
+College = read.csv('http://www-bcf.usc.edu/~gareth/ISL/College.csv')
+
+# display the table
+head(College)
 ```
 
 ### (b) assign the 1st column to rownames
-
 ```{r}
 # assign the rownames to the 1st column
-rownames(college)=college[,1]
+rownames(College) = College[,1]
 
 # remove the 1st column that is now duplicate
-college=college[,-1]
+College = College[,-1]
+
+# display the table
+head(College)
 ```
 
+### (c) inspect the data
+#### i. see summary
+```{r}
+summary(College)
+```
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
+#### ii. plot scatterplot
+```{r}
+# plot just the first 10 entries
+pairs(College[,1:10])
+
+#check correlations
+library(corrr)
+library(magrittr)
+College[2:18] %>% correlate() %>% rearrange() %>% shave() %>% rplot()
+```
+
+#### iii. boxplot of `Outstate` vs `Private`
+```{r}
+plot(College$Private, College$Outstate, xlab='Private', ylab='Outstate Applications')
+```
+
+#### iv. create `Elite` qualitative variable
+```{r}
+Elite = rep("No", nrow(College))
+Elite[College$Top10perc>50] = "Yes"
+Elite=as.factor(Elite)
+College=data.frame(College, Elite)
+
+summary(College$Elite)
+plot(College$Elite, College$Outstate, xlab='Elite', ylab='Outstate Applications')
+
+```
+#### v. plot histograms
+```{r}
+par(mfrow=c(2,2))
+hist(College$Apps, breaks=20, main="", xlab="Applications")
+hist(College$Accept, breaks=20, main="", xlab="Acceptance")
+hist(College$Enroll, breaks=20, main="", xlab="Enrolled")
+hist(College$Top10perc, breaks=20, main="", xlab="Top 10%")
+```
+
+## 9. Auto Dataset
+```{r}
+# load dataset
+Auto = read.csv('http://www-bcf.usc.edu/~gareth/ISL/Auto.csv', header=T, na.strings="?")
+
+# remove missing values
+Auto = na.omit(Auto)
+
+# fix horsepower being seen as categorical
+Auto$horsepower = as.integer(Auto$horsepower)
+
+# make origin categorical
+Auto$origin = as.factor(Auto$origin)
+
+head(Auto)
+```
+
+### (a) qualitative and quantitative predictors
+```{r}
+summary(Auto)
+```
+
+* Quantitative: mpg, cylinders, displacement, weight, accelerations, year, origin
+* Qualitative: origin, name
+
+### (b) range for each quantitative predictor
+```{r}
+# sapply range only to quantitative columns
+sapply(Auto[, 1:7], range)
+```
+
+### (c) mean and standard deviation for each quantitative predictor
+```{r}
+# mean
+sapply(Auto[, 1:7], mean)
+
+# standard deviation
+sapply(Auto[, 1:7], sd)
+```
+
+### (d) remove 10th through 85th observations and calculate range mean and standard deviation
+```{r}
+# remove rows
+Auto_subset = Auto[-(10:85),]
+
+# range
+sapply(Auto_subset[, 1:7], range)
+
+# mean
+sapply(Auto_subset[, 1:7], mean)
+
+# standard deviation
+sapply(Auto_subset[, 1:7], sd)
+
+```
+
+### (e) analyse data visually
+```{r}
+pairs(Auto)
+
+plot(Auto$horsepower, Auto$mpg, xlab="horse power", ylab="mpg")
+
+plot(as.factor(Auto$cylinders), Auto$mpg, xlab="cylinders", ylab="mpg")
+```
+
+### (f) predict `mpg` from other variables
+```{r}
+# check correlation for `mpg`
+cor(Auto[,1:7])['mpg',]
+```
+
+Strong negative correlation with `weight`, `displacement`, `horsepower` and `cylinders`.
+
+## 10. Boston Dataset
+### (a) load dataset and overview data
+```{r}
+library(MASS)
+
+dim(Boston)
+
+summary(Boston)
+```
+
+There are 14 columns and 506 row. Columns represent the predictors and rows the observations (one per town).
+
+### (b) Do pairplots of the data and report findings
+```{r}
+library(corrr)
+library(magrittr)
+# pairs(Boston)
+Boston %>% correlate() %>% rearrange() %>% shave() %>% rplot()
+```
+
+It makes more sense to explore the data checking the correlations in this case.
+
+The correlation matrix shows strong correlations and anti correlations in some of the predictors.
+
+### (c) Check correlations with crime
+There is a srong correlation with crime in the `rad` predictor and the `tax` predictor.
+
+### (d) Check ranges of `crim`, `tax`, `ptratio`.
+```{r}
+par(mfrow=c(3,2))
+hist(Boston$crim, breaks=20, main="", xlab="Crime")
+plot(Boston$crim, xlab="Crime")
+hist(Boston$tax, breaks=20, main="", xlab="Taxes")
+plot(Boston$tax, xlab="Taxes")
+hist(Boston$ptratio, breaks=20, main="", xlab="Pupil/Teacher")
+plot(Boston$ptratio, xlab="Pupil/Teacher")
+```
+
+* **Crime**: There is a high range. Most have very low crime rates, but in some suburbs the crime is >= 80 with clear outliers.
+
+* **Taxes**: There are a big chunk of suburb outliers with very high taxes (> 650).
+
+* **Pupil/Teacher**: There is an high prevalence for a high ratio in this predictor but there aren't clear outliers.
+
+### (e) Suburbs bound by Charles river.
+There are several aproaches, but the best one in this case is to use `table`:
+```{r}
+table(Boston$chas)
+```
+
+Which yields 35 suburbs.
+
+### (f) Median pupil/teacher ratio.
+```{r}
+median(Boston$ptratio)
+```
+
+### (g) Minimum `medv`:
+```{r}
+t(subset(Boston, medv == min(Boston$medv)))
+summary(Boston)
+```
+
+### (h) Rooms per dwelling.
+```{r}
+# More than 7 rooms per dwelling
+dim(subset(Boston, rm>7))[1]
+
+# More than 8 rooms per dwelling
+dim(subset(Boston, rm>8))[1]
+
+# Compare suburbs with more than 8 rooms per dewlling on average with all.
+summary(subset(Boston, rm>8))
+summary(Boston)
+```
